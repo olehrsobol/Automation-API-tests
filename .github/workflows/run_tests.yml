@@ -4,13 +4,13 @@ on:
   workflow_dispatch:
     inputs:
       deployment_target:
-        description: Select tests to run
+        description: Choose target
         required: true
         type: choice
         default: all
         options:
           - all
-          
+         
 permissions:
   contents: read
   pages: write
@@ -20,8 +20,10 @@ jobs:
   run-tests:
     runs-on: ubuntu-latest
     name: Tests
+    outputs:
+      good: ${{ steps.all.outcome }}
     steps:
-      - name: Copy source code
+      - name: Checkout repository
         uses: actions/checkout@v4
       - name: Set up Python env
         uses: actions/setup-python@v5
@@ -30,28 +32,37 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
       - name: Run API tests and generate Allure results
+        id: all
         run: |
-          pytest -m regression --alluredir=allure-results --numprocesses 2
-            # -m regression: запуск тестов с меткой regression
-            # --alluredir: сохранение результатов в формате Allure
-            # --numprocesses: параллельный запуск для ускорения
+          pytest -m all --alluredir=allure-results --numprocesses 2
+        continue-on-error: true
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'microsoft'
+          java-version: '17'
+      - run: sudo wget https://github.com/allure-framework/allure2/releases/download/2.46.2/allure-2.46.2.tgz && sudo tar -zxvf allure-2.46.2.tgz -C /opt/ && sudo ln -s /opt/allure-2.46.2/bin/allure /usr/bin/allure
+      - run: allure generate -c allure-results -o allure-report
       - name: Upload Allure results
-        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: allure-results
           path: allure-results
-          
+          retention-days: 1
+      # - name: Upload Allure results
+      #   if: always()
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: allure-results
+      #     path: allure-results
+
   publish-report:
       if: always()
-      needs: [ run-tests ]
+      needs: run-tests
       runs-on: ubuntu-latest
+      name: Report publication
       steps:
         - name: Check out repository (gh-pages)
           uses: actions/checkout@v4
-          with:
-            ref: gh-pages
-            path: gh-pages
   
         - name: Download Allure results
           uses: actions/download-artifact@v4
@@ -65,9 +76,8 @@ jobs:
             allure_results: allure-results
             allure_history: allure-history
   
-        - name: Deploy report to GitHub Pages
-          uses: peaceiris/actions-gh-pages@v4
-          with:
-            github_token: ${{ secrets.GITHUB_TOKEN }}
-            publish_branch: gh-pages
-            publish_dir: allure-history
+        # - name: Deploy report to GitHub Pages
+        #   uses: peaceiris/actions-gh-pages@v4
+        #   with:
+        #     github_token: ${{ secrets.GITHUB_TOKEN }}
+
