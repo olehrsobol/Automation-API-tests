@@ -1,0 +1,5 @@
+"DESCRIPTION","DURATION IN MS","NAME","PARENT SUITE","START TIME","STATUS","STOP TIME","SUB SUITE","SUITE","TEST CLASS","TEST METHOD"
+"","463","test_update_object","tests","2026-11-13","passed","2026-11-13","","test_objects","",""
+"","463","test_get_object","tests","2026-11-13","passed","2026-11-13","","test_objects","",""
+"","951","test_delete_object","tests","2026-11-13","passed","2026-11-13","","test_objects","",""
+"","596","test_create_object","tests","2026-11-13","passed","2026-11-13","","test_objects","",""
